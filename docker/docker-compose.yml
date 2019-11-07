@@ -1,0 +1,60 @@
+version: '3'
+services:
+  mysql_horizon:
+    image: 'mysql:5.7'
+    deploy:
+      placement:
+        constraints:
+          - 'node.role == manager'
+    ports:
+      - '3333:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: horizon
+      MYSQL_USER: horizon
+      MYSQL_PASSWORD: 123456
+    networks:
+      - horizon_network
+    volumes:
+      - './data:/var/lib/mysql'
+  phpmyadmin_horizon:
+    image: phpmyadmin/phpmyadmin
+    deploy:
+      placement:
+        constraints:
+          - 'node.role == manager'
+    networks:
+      - horizon_network
+    environment:
+      PMA_HOST: mysql_horizon
+      PMA_PORT: 3306
+    ports:
+      - '8091:80'
+    volumes:
+      - /sessions
+  aplicacao_horizon:
+    image: 'leolegends/microservices_php:stable-horizon'
+    ports:
+      - '8001:80'
+    volumes:
+      - '${DIR}:/app'
+    environment:
+      WEB_DOCUMENT_ROOT: /app/public
+    networks:
+      - horizon_network
+  redis:
+    image: bitnami/redis
+    user: root
+    ports:
+     - '6390:6379'
+    sysctls:
+     net.core.somaxconn: 1024
+    volumes:
+      - './redis/:/bitnami/redis/data'
+    restart: always
+    environment:
+      REDIS_PASSWORD: '${REDIS_PASSWORD}'
+    networks:
+      - horizon_network
+networks:
+  horizon_network: null
